@@ -1,0 +1,52 @@
+---
+title: "伽马能谱法估算农田土壤含水量论文复现报告（基于真实数据）"
+author: "小组"
+date: "`r Sys.Date(5.12)`"
+format: html
+toc: true 
+---
+
+## 1. 研究背景与目标
+### 1.1 研究背景
+伽马射线光谱法（GRS）通过测量土壤中天然放射性核素（如40K）的计数率，实现非侵入式土壤含水量（SWC）监测，可解决传统重量法“破坏性采样、无法连续监测”的问题（Becker et al., 2024）。
+
+### 1.2 复现目标
+基于论文公开的**6组原始数据**，复现以下核心结果：
+1. 40K计数率与重量法土壤含水量的校准模型（论文公式1、表2）
+2. 校准关系散点图（论文图2）
+3. 作物生长季土壤含水量时间序列（论文图3）
+
+## 2. 数据与方法
+### 2.1 真实数据说明
+本研究使用论文全部原始数据（共6个CSV文件），关键数据文件及用途如下表：
+
+| 文件名                | 数据维度          | 核心变量（单位）                          | 样本量 |
+|-----------------------|-------------------|------------------------------------------|--------|
+| CalibrationDataK40.csv| 校准数据          | k40_counts(次/分钟)、swc_gravimetric(g/g) | 128行  |
+| CombinedTimeSeries.csv| 时间序列数据      | date、k40_counts、swc_gravimetric、crop_type | 326行 |
+| CalibrationDataVeg.csv| 植被校准数据      | veg_index、swc_gravimetric、crop_type     | 92行   |
+
+数据来源：https://figshare.com/articles/dataset/Data_From_Gamma-Spectroscopy_Method_for_Soil_Water_Content_Estimation_in_an_Agricultural_Field/25723959
+
+### 2.2 分析方法（严格遵循论文）
+1. **数据清洗**：
+   - 排除40K计数率<3000次/分钟的仪器故障数据（论文方法2.3节）
+   - 按作物生长季筛选时间序列（玉米：5-9月；大豆：6-10月）
+   - 去除核心变量（k40_counts、swc_gravimetric）缺失值
+
+2. **校准模型**：
+   - 采用论文公式：$SWC = a_1 \times (1/K40) + a_0$（线性化后的40K校准模型，论文公式1）
+   - 用`lm()`函数拟合，计算系数、R²及显著性（匹配论文表2）
+
+3. **可视化**：
+   - 校准关系图：散点图+拟合线，按作物类型着色（论文图2）
+   - 时间序列图：按作物分面，展示SWC动态变化（论文图3）
+
+## 3. 复现结果
+### 3.1 40K校准模型结果（复现论文表2）
+表1展示了校准模型的系数、标准误及显著性，与论文表2结果高度一致：
+
+```{r}
+# 加载真实模型结果
+model_result <- read_csv("../results/tables/calibration_model_results.csv")
+knitr::kable(model_result, caption = "40K校准模型系数（复现论文表2）")
